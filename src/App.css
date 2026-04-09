@@ -332,6 +332,16 @@
   opacity: 0.9;
 }
 
+.season-non-default .field-label,
+.season-non-default .season-pill,
+.season-non-default .season-sub {
+  color: var(--warn-text);
+}
+
+.season-non-default .season-pill {
+  border-color: var(--warn-border);
+}
+
 .link-list {
   list-style: none;
   padding: 0;

@@ -32,6 +32,13 @@ function seasonKey(season: { year: number; month: 1 | 4 | 7 | 10; name: SeasonNa
   return `${season.year}-${pad2(season.month)}-${season.name}`;
 }
 
+function seasonsEqual(
+  a: { year: number; month: 1 | 4 | 7 | 10; name: SeasonName },
+  b: { year: number; month: 1 | 4 | 7 | 10; name: SeasonName },
+): boolean {
+  return a.year === b.year && a.month === b.month && a.name === b.name;
+}
+
 function stepSeason(
   season: { year: number; month: 1 | 4 | 7 | 10; name: SeasonName },
   delta: -1 | 1,
@@ -303,16 +310,22 @@ function App() {
   });
 
   useEffect(() => {
-    const payload = {
+    const defaultSeason = defaultSeasonForNow();
+    const payload: Record<string, string | number> = {
       animeDisplayTitle,
       animeSearchTitle,
       minEpisodeText,
-      seasonYear: season.year,
-      seasonMonth: season.month,
-      seasonName: season.name,
     };
+    if (!seasonsEqual(season, defaultSeason)) {
+      payload.seasonYear = season.year;
+      payload.seasonMonth = season.month;
+      payload.seasonName = season.name;
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [animeDisplayTitle, animeSearchTitle, minEpisodeText, season.year, season.month, season.name]);
+
+  const defaultSeason = defaultSeasonForNow();
+  const seasonIsNonDefault = !seasonsEqual(season, defaultSeason);
 
   const safeAnimeDisplayTitle = sanitizeWindowsName(animeDisplayTitle);
   const seasonPath = seasonKey(season);
@@ -410,7 +423,7 @@ function App() {
               </div>
             </div>
 
-            <div className="field">
+            <div className={`field${seasonIsNonDefault ? " season-non-default" : ""}`}>
               <span className="field-label">Season</span>
               <div className="season-row">
                 <button
