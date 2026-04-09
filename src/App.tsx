@@ -342,6 +342,9 @@ function App() {
   const nyaaRssUrl = (query: string) =>
     `https://nyaa.si/?page=rss&f=0&c=0_0&q=${encodeURIComponent(query)}`;
 
+  const nyaaRssWithSubsUrl = nyaaRssUrl(nyaaQueryWithSubsPlease);
+  const nyaaRssNoSubsUrl = nyaaRssUrl(nyaaQueryNoSubsPlease);
+
   const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(`${animeDisplayTitle} myanimelist`)}`;
 
   return (
@@ -459,18 +462,38 @@ function App() {
                     Nyaa search (with subsplease)
                   </a>
                   {" · "}
-                  <a href={nyaaRssUrl(nyaaQueryWithSubsPlease)} target="_blank" rel="noreferrer">
-                    RSS
-                  </a>
+                  <span className="link-rss-group">
+                    <a href={nyaaRssWithSubsUrl} target="_blank" rel="noreferrer">
+                      RSS
+                    </a>
+                    <button
+                      type="button"
+                      className="copy-btn copy-btn--inline"
+                      onClick={() => void copyToClipboard(nyaaRssWithSubsUrl)}
+                      aria-label="Copy Nyaa RSS URL (with subsplease)"
+                    >
+                      <CopyIcon />
+                    </button>
+                  </span>
                 </li>
                 <li>
                   <a href={nyaaSearchUrl(nyaaQueryNoSubsPlease)} target="_blank" rel="noreferrer">
                     Nyaa search (no subsplease)
                   </a>
                   {" · "}
-                  <a href={nyaaRssUrl(nyaaQueryNoSubsPlease)} target="_blank" rel="noreferrer">
-                    RSS
-                  </a>
+                  <span className="link-rss-group">
+                    <a href={nyaaRssNoSubsUrl} target="_blank" rel="noreferrer">
+                      RSS
+                    </a>
+                    <button
+                      type="button"
+                      className="copy-btn copy-btn--inline"
+                      onClick={() => void copyToClipboard(nyaaRssNoSubsUrl)}
+                      aria-label="Copy Nyaa RSS URL (no subsplease)"
+                    >
+                      <CopyIcon />
+                    </button>
+                  </span>
                 </li>
                 <li>
                   <a href={googleUrl} target="_blank" rel="noreferrer">

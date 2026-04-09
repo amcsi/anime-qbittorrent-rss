@@ -278,6 +278,23 @@
   display: block;
 }
 
+.copy-btn--inline {
+  width: 32px;
+  height: 32px;
+}
+
+.copy-btn--inline .copy-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.link-rss-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
+}
+
 .season-row {
   display: flex;
   align-items: center;
