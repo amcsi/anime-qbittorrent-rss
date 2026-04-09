@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import "./App.css";
 
 type SeasonName = "Winter" | "Spring" | "Summer" | "Fall";
@@ -91,6 +91,134 @@ function joinPath(...parts: Array<string | undefined>): string {
   return keepLeadingSlash && !joined.startsWith("/") ? `/${joined}` : joined;
 }
 
+/** Regex (as a string) matching an episode number token >= min, with 01–09 style padding for episodes < 10. */
+function buildMinEpisodeNumberRegex(minRaw: number): string {
+  const min = Math.max(1, Math.min(999, Math.floor(Number(minRaw)) || 1));
+  const parts: string[] = [];
+
+  if (min <= 99) {
+    if (min <= 9) {
+      parts.push(`0[${min}-9]`);
+      parts.push(`[1-9]\\d`);
+    } else {
+      const tens = Math.floor(min / 10);
+      const ones = min % 10;
+      if (ones === 0) {
+        parts.push(`${tens}[0-9]`);
+        if (tens < 9) parts.push(`[${tens + 1}-9]\\d`);
+      } else {
+        parts.push(`${tens}[${ones}-9]`);
+        if (tens < 9) parts.push(`[${tens + 1}-9]\\d`);
+      }
+    }
+    parts.push(`[1-9]\\d{2,}`);
+    return `((?:${parts.join("|")}))`;
+  }
+
+  const h = Math.floor(min / 100);
+  const rest = min % 100;
+  const t = Math.floor(rest / 10);
+  const o = rest % 10;
+
+  if (t === 0 && o === 0) {
+    parts.push(`${h}00`);
+    parts.push(`${h}0[1-9]`);
+    parts.push(`${h}[1-9]\\d`);
+  } else if (t === 0 && o !== 0) {
+    parts.push(`${h}0[${o}-9]`);
+    parts.push(`${h}[1-9]\\d`);
+  } else if (t !== 0 && o === 0) {
+    parts.push(`${h}${t}0`);
+    parts.push(`${h}${t}[1-9]`);
+    if (t < 9) parts.push(`${h}[${t + 1}-9]\\d`);
+  } else {
+    parts.push(`${h}${t}[${o}-9]`);
+    if (t < 9) parts.push(`${h}[${t + 1}-9]\\d`);
+  }
+
+  if (h < 9) parts.push(`[${h + 1}-9]\\d{2}`);
+  parts.push(`[1-9]\\d{3,}`);
+
+  return `((?:${parts.join("|")}))`;
+}
+
+function clampMinEpisode(n: number): number {
+  return Math.max(1, Math.min(999, Math.floor(Number(n)) || 1));
+}
+
+async function copyToClipboard(text: string): Promise<void> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+  } catch {
+    // fall through to legacy copy
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  document.body.removeChild(ta);
+}
+
+function CopyIcon() {
+  return (
+    <svg
+      className="copy-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="8.25" y="8.25" width="12.5" height="12.5" rx="2" />
+      <path d="M6.5 15.75H5.75A2 2 0 0 1 3.75 13.75V5.75A2 2 0 0 1 5.75 3.75H13.75A2 2 0 0 1 15.75 5.75V6.5" />
+    </svg>
+  );
+}
+
+function ReadonlyCopyRow(props: {
+  label: string;
+  value: string;
+  placeholder?: string;
+  copyValue: string;
+  mono?: boolean;
+  copyAriaLabel: string;
+  after?: ReactNode;
+}) {
+  const { label, value, placeholder, copyValue, mono, copyAriaLabel, after } = props;
+  return (
+    <div className="field field-span2">
+      <span className="field-label">{label}</span>
+      <div className="readonly-row">
+        <input
+          className={`readonly-row-input${mono ? " input-mono" : ""}`}
+          value={value}
+          readOnly
+          placeholder={placeholder}
+          spellCheck={false}
+        />
+        <button
+          type="button"
+          className="copy-btn"
+          onClick={() => void copyToClipboard(copyValue)}
+          aria-label={copyAriaLabel}
+        >
+          <CopyIcon />
+        </button>
+      </div>
+      {after}
+    </div>
+  );
+}
+
 function App() {
   const basePath = (import.meta.env.VITE_BASE_PATH as string | undefined) ?? "";
 
@@ -110,6 +238,24 @@ function App() {
       if (!raw) return "";
       const parsed = JSON.parse(raw) as Partial<{ animeSearchTitle: string }>;
       return parsed.animeSearchTitle ?? "";
+    } catch {
+      return "";
+    }
+  });
+
+  const [minEpisodeText, setMinEpisodeText] = useState(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return "";
+      const parsed = JSON.parse(raw) as Partial<{ minEpisodeText: string; minEpisode: number }>;
+      if (typeof parsed.minEpisodeText === "string") {
+        return parsed.minEpisodeText;
+      }
+      // Back-compat if an older numeric value exists
+      if (typeof parsed.minEpisode === "number" && Number.isFinite(parsed.minEpisode)) {
+        return String(clampMinEpisode(parsed.minEpisode));
+      }
+      return "";
     } catch {
       return "";
     }
@@ -148,17 +294,33 @@ function App() {
     const payload = {
       animeDisplayTitle,
       animeSearchTitle,
+      minEpisodeText,
       seasonYear: season.year,
       seasonMonth: season.month,
       seasonName: season.name,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [animeDisplayTitle, animeSearchTitle, season.year, season.month, season.name]);
+  }, [animeDisplayTitle, animeSearchTitle, minEpisodeText, season.year, season.month, season.name]);
 
   const safeAnimeDisplayTitle = sanitizeWindowsName(animeDisplayTitle);
   const seasonPath = seasonKey(season);
   const fullDirectory = joinPath(basePath, seasonPath, safeAnimeDisplayTitle);
   const seasonDisplay = `${seasonPath} - ${animeDisplayTitle}`.trim();
+
+  const trimmedMinEpisodeText = minEpisodeText.trim();
+  const isMinEpisodeEmpty = trimmedMinEpisodeText.length === 0;
+  const isMinEpisodeNumeric = /^\d+$/.test(trimmedMinEpisodeText);
+  const minEpisodeRegex =
+    isMinEpisodeEmpty || !isMinEpisodeNumeric
+      ? ""
+      : buildMinEpisodeNumberRegex(clampMinEpisode(Number(trimmedMinEpisodeText)));
+  const minEpisodeRegexSpaced =
+    isMinEpisodeNumeric && minEpisodeRegex.length > 0 ? `( ${minEpisodeRegex.slice(1, -1)} )` : "";
+  const minEpisodeRegexDisplay = isMinEpisodeNumeric
+    ? minEpisodeRegexSpaced
+    : isMinEpisodeEmpty
+      ? ""
+      : `Invalid minimum episode number: "${minEpisodeText}"`;
 
   const nyaaQueryWithSubsPlease = `${animeSearchTitle} -480 -batch subsplease`.trim();
   const nyaaQueryNoSubsPlease = `${animeSearchTitle} -480 -batch`.trim();
@@ -200,6 +362,39 @@ function App() {
               />
             </label>
 
+            <label className="field">
+              <span className="field-label">Minimum episode number</span>
+              <input
+                value={minEpisodeText}
+                onChange={(e) => setMinEpisodeText(e.target.value)}
+                placeholder="e.g. 05"
+                inputMode="numeric"
+                autoComplete="off"
+              />
+              <div className="field-hint">Episodes 1–9 are treated as 01–09 in the regex.</div>
+            </label>
+
+            <div className="field">
+              <span className="field-label">Episode number regex (readonly)</span>
+              <div className="readonly-row">
+                <input
+                  className="readonly-row-input input-mono"
+                  value={minEpisodeRegexDisplay}
+                  readOnly
+                  placeholder="Set the minimum episode number"
+                  spellCheck={false}
+                />
+                <button
+                  type="button"
+                  className="copy-btn"
+                  onClick={() => void copyToClipboard(minEpisodeRegexDisplay)}
+                  aria-label="Copy episode number regex"
+                >
+                  <CopyIcon />
+                </button>
+              </div>
+            </div>
+
             <div className="field">
               <span className="field-label">Season</span>
               <div className="season-row">
@@ -224,19 +419,25 @@ function App() {
               <div className="season-sub">{seasonPath}</div>
             </div>
 
-            <label className="field field-span2">
-              <span className="field-label">Full directory (readonly)</span>
-              <input value={fullDirectory} readOnly />
-              <div className="field-hint">
-                Display title sanitized for Windows:{" "}
-                <code>{safeAnimeDisplayTitle || "(empty)"}</code>
-              </div>
-            </label>
+            <ReadonlyCopyRow
+              label="Full directory (readonly)"
+              value={fullDirectory}
+              copyValue={fullDirectory}
+              copyAriaLabel="Copy full directory"
+              after={
+                <div className="field-hint">
+                  Display title sanitized for Windows:{" "}
+                  <code>{safeAnimeDisplayTitle || "(empty)"}</code>
+                </div>
+              }
+            />
 
-            <label className="field field-span2">
-              <span className="field-label">Season label (readonly)</span>
-              <input value={seasonDisplay} readOnly />
-            </label>
+            <ReadonlyCopyRow
+              label="Season label (readonly)"
+              value={seasonDisplay}
+              copyValue={seasonDisplay}
+              copyAriaLabel="Copy season label"
+            />
 
             <div className="field field-span2">
               <span className="field-label">Links</span>

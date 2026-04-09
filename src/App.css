@@ -232,6 +232,52 @@
   outline-offset: 2px;
 }
 
+.field input.input-mono {
+  font-family: var(--mono);
+  font-size: 14px;
+}
+
+.readonly-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.readonly-row .readonly-row-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.copy-btn {
+  flex: 0 0 auto;
+  width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--social-bg);
+  color: var(--text-h);
+  cursor: pointer;
+  padding: 0;
+  transition: box-shadow 0.2s;
+}
+
+.copy-btn:hover {
+  box-shadow: var(--shadow);
+}
+
+.copy-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.copy-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
 .season-row {
   display: flex;
   align-items: center;
