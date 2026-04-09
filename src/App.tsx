@@ -334,8 +334,8 @@ function App() {
       ? ""
       : `Invalid minimum episode number: "${minEpisodeText}"`;
 
-  const nyaaQueryWithSubsPlease = `${animeSearchTitle} -480 -batch subsplease`.trim();
-  const nyaaQueryNoSubsPlease = `${animeSearchTitle} -480 -batch`.trim();
+  const nyaaQueryWithSubsPlease = `${animeSearchTitle} (720p|1080p) -batch subsplease`.trim();
+  const nyaaQueryNoSubsPlease = `${animeSearchTitle} (720p|1080p) -batch`.trim();
 
   const nyaaSearchUrl = (query: string) =>
     `https://nyaa.si/?f=0&c=0_0&q=${encodeURIComponent(query)}`;
