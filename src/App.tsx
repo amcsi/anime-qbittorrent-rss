@@ -168,7 +168,7 @@ function App() {
   const nyaaRssUrl = (query: string) =>
     `https://nyaa.si/?page=rss&f=0&c=0_0&q=${encodeURIComponent(query)}`;
 
-  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(animeDisplayTitle)}`;
+  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(`${animeDisplayTitle} myanimelist`)}`;
 
   return (
     <>
