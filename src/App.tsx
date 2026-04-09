@@ -238,8 +238,20 @@ function ReadonlyCopyRow(props: {
   );
 }
 
+function readStoredBasePath(): string {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return "";
+    const parsed = JSON.parse(raw) as Partial<{ basePath: string }>;
+    if (typeof parsed.basePath === "string") return parsed.basePath;
+    return "";
+  } catch {
+    return "";
+  }
+}
+
 function App() {
-  const basePath = (import.meta.env.VITE_BASE_PATH as string | undefined) ?? "";
+  const [basePath, setBasePath] = useState(() => readStoredBasePath());
 
   const [animeDisplayTitle, setAnimeDisplayTitle] = useState(() => {
     try {
@@ -315,6 +327,7 @@ function App() {
       animeDisplayTitle,
       animeSearchTitle,
       minEpisodeText,
+      basePath,
     };
     if (!seasonsEqual(season, defaultSeason)) {
       payload.seasonYear = season.year;
@@ -322,7 +335,15 @@ function App() {
       payload.seasonName = season.name;
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [animeDisplayTitle, animeSearchTitle, minEpisodeText, season.year, season.month, season.name]);
+  }, [
+    animeDisplayTitle,
+    animeSearchTitle,
+    minEpisodeText,
+    basePath,
+    season.year,
+    season.month,
+    season.name,
+  ]);
 
   const defaultSeason = defaultSeasonForNow();
   const seasonIsNonDefault = !seasonsEqual(season, defaultSeason);
@@ -366,11 +387,19 @@ function App() {
       <section id="center">
         <div style={{ width: "min(900px, 100%)" }}>
           <h1>Anime RSS helper</h1>
-          <p style={{ marginBottom: 18 }}>
-            Base path from <code>VITE_BASE_PATH</code>.
-          </p>
 
           <div className="form-grid">
+            <label className="field field-span2">
+              <span className="field-label">Base path</span>
+              <input
+                value={basePath}
+                onChange={(e) => setBasePath(e.target.value)}
+                placeholder="e.g. /mnt/media/anime"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </label>
+
             <label className="field">
               <span className="field-label">Anime display title</span>
               <input
