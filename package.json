@@ -1,12 +1,13 @@
 {
   "name": "anime-qbittorrent-rss",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "lint:ox": "oxlint --react-plugin eslint.config.js vite.config.ts $(find src -type f \\( -name '*.ts' -o -name '*.tsx' \\))",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -23,6 +24,8 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "oxfmt": "^0.44.0",
+    "oxlint": "^1.59.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.0",
     "vite": "^8.0.4"
