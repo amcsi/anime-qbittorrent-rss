@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
+import { toast } from "sonner";
 import "./App.css";
 
 type SeasonName = "Winter" | "Spring" | "Summer" | "Fall";
@@ -150,20 +151,31 @@ async function copyToClipboard(text: string): Promise<void> {
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard");
       return;
     }
   } catch {
     // fall through to legacy copy
   }
-  const ta = document.createElement("textarea");
-  ta.value = text;
-  ta.setAttribute("readonly", "");
-  ta.style.position = "fixed";
-  ta.style.left = "-9999px";
-  document.body.appendChild(ta);
-  ta.select();
-  document.execCommand("copy");
-  document.body.removeChild(ta);
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (ok) {
+      toast.success("Copied to clipboard");
+    } else {
+      toast.error("Could not copy");
+    }
+  } catch {
+    toast.error("Could not copy");
+  }
 }
 
 function CopyIcon() {
