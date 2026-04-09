@@ -359,6 +359,7 @@ function App() {
   const nyaaRssNoSubsUrl = nyaaRssUrl(nyaaQueryNoSubsPlease);
 
   const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(`${animeDisplayTitle} myanimelist`)}`;
+  const googleSearchTitleUrl = `https://www.google.com/search?q=${encodeURIComponent(`${animeSearchTitle} myanimelist`)}`;
 
   return (
     <>
@@ -511,6 +512,11 @@ function App() {
                 <li>
                   <a href={googleUrl} target="_blank" rel="noreferrer">
                     Google search (display title)
+                  </a>
+                </li>
+                <li>
+                  <a href={googleSearchTitleUrl} target="_blank" rel="noreferrer">
+                    Google search (search title)
                   </a>
                 </li>
               </ul>
