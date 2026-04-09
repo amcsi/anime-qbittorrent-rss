@@ -73,10 +73,22 @@ function sanitizeWindowsName(input: string): string {
 }
 
 function joinPath(...parts: Array<string | undefined>): string {
+  const first = parts.find((p) => Boolean(p && p.trim().length > 0)) ?? "";
+  const keepLeadingSlash = typeof first === "string" && first.trim().startsWith("/");
+
   const cleaned = parts
     .filter((p): p is string => Boolean(p && p.trim().length > 0))
-    .map((p) => p.replace(/\/+$/g, "").replace(/^\/+|\/+$/g, ""));
-  return cleaned.join("/");
+    .map((p, idx) => {
+      const trimmed = p.trim();
+      const noTrailing = trimmed.replace(/\/+$/g, "");
+      if (idx === 0) return noTrailing.replace(/\/+$/g, "");
+      return noTrailing.replace(/^\/+/g, "");
+    })
+    .filter((p) => p.length > 0);
+
+  const joined = cleaned.join("/");
+  if (!joined) return keepLeadingSlash ? "/" : "";
+  return keepLeadingSlash && !joined.startsWith("/") ? `/${joined}` : joined;
 }
 
 function App() {
