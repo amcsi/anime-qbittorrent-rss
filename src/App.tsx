@@ -1,67 +1,16 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { AnimeSearchTitleCombobox } from "./AnimeSearchTitleCombobox";
 import "./App.css";
-
-type SeasonName = "Winter" | "Spring" | "Summer" | "Fall";
+import {
+  defaultSeasonForNow,
+  seasonKey,
+  seasonsEqual,
+  stepSeason,
+  type SeasonName,
+} from "./season";
 
 const STORAGE_KEY = "anime-qbittorrent-rss:form:v1";
-
-function seasonFromMonth(month1to12: number): { month: 1 | 4 | 7 | 10; name: SeasonName } {
-  if (month1to12 >= 10) return { month: 10, name: "Fall" };
-  if (month1to12 >= 7) return { month: 7, name: "Summer" };
-  if (month1to12 >= 4) return { month: 4, name: "Spring" };
-  return { month: 1, name: "Winter" };
-}
-
-function defaultSeasonForNow(now = new Date()): {
-  year: number;
-  month: 1 | 4 | 7 | 10;
-  name: SeasonName;
-} {
-  const year = now.getFullYear();
-  const month1to12 = now.getMonth() + 1;
-  const { month, name } = seasonFromMonth(month1to12);
-  return { year, month, name };
-}
-
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
-function seasonKey(season: { year: number; month: 1 | 4 | 7 | 10; name: SeasonName }): string {
-  return `${season.year}-${pad2(season.month)}-${season.name}`;
-}
-
-function seasonsEqual(
-  a: { year: number; month: 1 | 4 | 7 | 10; name: SeasonName },
-  b: { year: number; month: 1 | 4 | 7 | 10; name: SeasonName },
-): boolean {
-  return a.year === b.year && a.month === b.month && a.name === b.name;
-}
-
-function stepSeason(
-  season: { year: number; month: 1 | 4 | 7 | 10; name: SeasonName },
-  delta: -1 | 1,
-): { year: number; month: 1 | 4 | 7 | 10; name: SeasonName } {
-  const months: Array<{ month: 1 | 4 | 7 | 10; name: SeasonName }> = [
-    { month: 1, name: "Winter" },
-    { month: 4, name: "Spring" },
-    { month: 7, name: "Summer" },
-    { month: 10, name: "Fall" },
-  ];
-  const idx = months.findIndex((m) => m.month === season.month);
-  const nextIdx = idx + delta;
-  if (nextIdx < 0) {
-    const m = months[months.length - 1]!;
-    return { year: season.year - 1, month: m.month, name: m.name };
-  }
-  if (nextIdx >= months.length) {
-    const m = months[0]!;
-    return { year: season.year + 1, month: m.month, name: m.name };
-  }
-  const m = months[nextIdx]!;
-  return { year: season.year, month: m.month, name: m.name };
-}
 
 function sanitizeWindowsName(input: string): string {
   // Strip Windows-forbidden filename characters and control chars.
@@ -410,15 +359,20 @@ function App() {
               />
             </label>
 
-            <label className="field">
+            <div className="field">
               <span className="field-label">Anime search title</span>
-              <input
+              <AnimeSearchTitleCombobox
                 value={animeSearchTitle}
-                onChange={(e) => setAnimeSearchTitle(e.target.value)}
-                placeholder="e.g. My Anime Title"
-                autoComplete="off"
+                onChange={setAnimeSearchTitle}
+                season={season}
+                onAnimeSelect={(anime) => {
+                  if (anime.romaji !== animeSearchTitle) {
+                    setAnimeSearchTitle(anime.romaji);
+                    setAnimeDisplayTitle(anime.english ?? anime.romaji);
+                  }
+                }}
               />
-            </label>
+            </div>
 
             <label className="field">
               <span className="field-label">Minimum episode number</span>
