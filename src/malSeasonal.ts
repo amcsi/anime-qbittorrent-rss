@@ -8,7 +8,8 @@ export type SeasonalAnime = {
   english: string | null;
 };
 
-type JikanSeasonResponse = {
+type TenraiSeasonResponse = {
+  pagination: { has_next_page: boolean };
   data: Array<{
     mal_id: number;
     title: string;
@@ -40,18 +41,32 @@ export function filterSeasonalAnime(anime: SeasonalAnime[], query: string): Seas
   });
 }
 
+// Tenrai caps page size at 100, so a season spans a few pages.
+const PAGE_LIMIT = 100;
+
 export async function fetchSeasonalAnime(year: number, name: SeasonName): Promise<SeasonalAnime[]> {
   const slug = seasonSlug[name];
-  const res = await fetch(`https://api.jikan.moe/v4/seasons/${year}/${slug}`);
-  if (!res.ok) {
-    throw new Error(`MyAnimeList seasonal lookup failed (${res.status})`);
+  const anime: SeasonalAnime[] = [];
+  const seen = new Set<number>();
+  for (let page = 1; ; page++) {
+    const res = await fetch(
+      `https://api.tenrai.org/v1/seasons/${year}/${slug}?limit=${PAGE_LIMIT}&page=${page}`,
+    );
+    if (!res.ok) {
+      throw new Error(`MyAnimeList seasonal lookup failed (${res.status})`);
+    }
+    const json = (await res.json()) as TenraiSeasonResponse;
+    for (const item of json.data) {
+      if (seen.has(item.mal_id)) continue;
+      seen.add(item.mal_id);
+      anime.push({
+        malId: item.mal_id,
+        romaji: item.title,
+        english: item.title_english?.trim() ? item.title_english.trim() : null,
+      });
+    }
+    if (!json.pagination.has_next_page) return anime;
   }
-  const json = (await res.json()) as JikanSeasonResponse;
-  return json.data.map((item) => ({
-    malId: item.mal_id,
-    romaji: item.title,
-    english: item.title_english?.trim() ? item.title_english.trim() : null,
-  }));
 }
 
 export function seasonalAnimeQueryOptions(year: number, name: SeasonName) {
